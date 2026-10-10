@@ -122,10 +122,12 @@
 /* ---- Print ---- */
 @page { size: A4; margin: 0; }
 @media print {
-  html, body { background: #fff !important; margin: 0; padding: 0; }
-  body * { visibility: hidden; }
-  #print-root, #print-root * { visibility: visible; }
-  #print-root { position: absolute; left: 0; top: 0; width: 210mm; }
-  .doc { box-shadow: none !important; margin: 0; min-height: 296mm; page-break-after: always; }
-  .doc:last-child { page-break-after: auto; }
+  html, body { background: #fff !important; margin: 0 !important; padding: 0 !important; height: auto !important; overflow: visible !important; }
+  /* remove the app entirely (visibility:hidden would still take up space and create blank pages) */
+  #app, .bg-orbs, .toast-root, .modal-overlay, #splash { display: none !important; }
+  #print-root { display: block; position: static; width: 210mm; margin: 0 auto; }
+  .doc { box-shadow: none !important; border-radius: 0 !important; margin: 0 !important; min-height: 0 !important; overflow: visible !important; page-break-after: auto; }
+  .doc + .doc { page-break-before: always; }
+  .doc .card, .doc .exporter-band, .doc .shipment, .doc .totals, .doc .sign, .doc .items-table tr, .doc .items-table thead { page-break-inside: avoid; break-inside: avoid; }
+  .doc .items-table thead { display: table-header-group; }
 }
