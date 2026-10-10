@@ -6,10 +6,6 @@
     {
       "source": "/api/:path*",
       "destination": "http://103.49.124.50:4000/api/:path*"
-    },
-    {
-      "source": "/vendor/:path*",
-      "destination": "http://103.49.124.50:4000/vendor/:path*"
     }
   ],
   "headers": [

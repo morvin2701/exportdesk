@@ -38,8 +38,8 @@ Two ways to run it:
 2. Double-click  start.bat        (Mac: start.command)
 ```
 
-The first run installs dependencies (needs internet once) and opens http://localhost:4000 in your browser.
-If the PC has no internet, copy the folder **including `node_modules`** from a machine where `npm install` was already run — the dependencies are pure JavaScript and work on Windows and Mac alike.
+The first run installs the backend dependencies into `server/node_modules` (needs internet once) and opens http://localhost:4000 in your browser.
+If the PC has no internet, copy the folder **including `server/node_modules`** from a machine where `npm install` was already run — the dependencies are pure JavaScript and work on Windows and Mac alike.
 
 The **setup wizard** appears:
 
@@ -93,12 +93,12 @@ Just run the Node server: it serves the frontend and the API from the same port 
 ## 6. Project layout
 
 ```
-server/            Express API (Node) – server/index.js is the entry point
-server/db.js       SQL Server connection + automatic schema creation
-server/.env        Backend settings (port, CORS, cookies, optional DB_* connection) – see .env.example
-server/config/     db.json (connection, created by the wizard) and secret.json – do not share
-public/            Frontend (no build step): css/, js/, js/pages/ – js/config.js holds the API base URL
-vercel.json        Vercel static deployment + rewrites that proxy /api to the backend
+server/            Backend API (Node) – self-contained: own package.json, index.js entry point, install.ps1. Only this folder is deployed to the server.
+server/db.js       SQL Server connection, registry (exportdesklink) + automatic schema creation
+server/.env        Backend settings (port, REGISTRY_*, PLATFORM_ADMIN_*, cookies, optional DB_*) – see .env.example
+server/config/     db.json / secret.json (single-client mode) – do not share
+public/            Frontend (no build step, deployed to Vercel): css/, js/, js/pages/, vendor/ (PDF libs); js/config.js holds the API base URL
+vercel.json        Vercel static deployment + rewrite that proxies /api to the backend
 ```
 
 Change the port with the `PORT` environment variable (default 4000).

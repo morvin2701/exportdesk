@@ -1,11 +1,10 @@
 /** Print and PDF export of rendered invoice HTML. */
 import { toast } from './ui.js';
-import { API_BASE } from './api.js';
 
 let vendorLoaded = null;
 function loadVendor() {
   if (vendorLoaded) return vendorLoaded;
-  vendorLoaded = Promise.all([API_BASE + '/vendor/html2canvas.min.js', API_BASE + '/vendor/jspdf.umd.min.js'].map(src => new Promise((res, rej) => {
+  vendorLoaded = Promise.all(['/vendor/html2canvas.min.js', '/vendor/jspdf.umd.min.js'].map(src => new Promise((res, rej) => {
     if (document.querySelector(`script[src="${src}"]`)) return res();
     const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = () => rej(new Error('Could not load PDF library')); document.head.appendChild(s);
   })));

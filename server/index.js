@@ -50,14 +50,15 @@ app.use('/api/customers', require('./routes/customers'));
 app.get('/api/health', (req, res) => res.json({ ok: true, mode: db.isMulti() ? 'multi' : 'single', configured: db.isMulti() || db.isConfigured(), time: new Date().toISOString() }));
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
-// ---- Vendor libraries (served from node_modules so the app works fully offline) ----
-app.get('/vendor/html2canvas.min.js', (req, res) => res.sendFile(require.resolve('html2canvas/dist/html2canvas.min.js')));
-app.get('/vendor/jspdf.umd.min.js', (req, res) => res.sendFile(require.resolve('jspdf/dist/jspdf.umd.min.js')));
-
-// ---- Static frontend ----
+// ---- Static frontend (only present in the all-in-one layout; on a server-only deployment the frontend lives on Vercel) ----
 const PUBLIC_DIR = path.join(__dirname, '..', 'public');
-app.use(express.static(PUBLIC_DIR, { index: 'index.html', maxAge: 0 }));
-app.get('*', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
+const HAS_FRONTEND = require('fs').existsSync(path.join(PUBLIC_DIR, 'index.html'));
+if (HAS_FRONTEND) {
+  app.use(express.static(PUBLIC_DIR, { index: 'index.html', maxAge: 0 }));
+  app.get('*', (req, res) => res.sendFile(path.join(PUBLIC_DIR, 'index.html')));
+} else {
+  app.get('/', (req, res) => res.type('text').send('ExportDesk API is running. The web app is served from Vercel; this server only answers /api/*.'));
+}
 
 // ---- Error handler ----
 // eslint-disable-next-line no-unused-vars
@@ -99,7 +100,7 @@ function lanAddresses() {
   }
   app.listen(PORT, HOST, () => {
     console.log('');
-    console.log('  ExportDesk API is running');
+    console.log(`  ExportDesk API is running (${HAS_FRONTEND ? 'serving frontend + API' : 'API only'})`);
     if (ALLOWED_ORIGINS.length) console.log(`  CORS:     ${ALLOWED_ORIGINS.join(', ')}`);
     console.log(`  Local:    http://localhost:${PORT}`);
     if (HOST === '0.0.0.0') for (const a of lanAddresses()) console.log(`  Network:  http://${a.split(' ')[0]}:${PORT}`);

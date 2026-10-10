@@ -5,3 +5,6 @@ start.bat
 start.command
 README.md
 .gitignore
+install.ps1
+INSTALL.txt
+DEPLOY.md

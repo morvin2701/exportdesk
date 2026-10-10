@@ -7,9 +7,11 @@ if %errorlevel% neq 0 (
   pause
   exit /b 1
 )
-if not exist node_modules (
+if not exist server\node_modules (
   echo Installing dependencies, please wait...
+  cd server
   call npm install --omit=dev
+  cd ..
 )
 start "" http://localhost:4000
 node server\index.js

@@ -1,6 +1,6 @@
 #Requires -RunAsAdministrator
 <#
-  ExportDesk - Windows installer for the backend (Node API + SQL Server connection) on the client's PC.
+  ExportDesk - Windows installer for the BACKEND ONLY (this `server` folder). The frontend lives on Vercel.
 
   Run from an elevated PowerShell (Run as Administrator) inside the copied folder:
 
@@ -12,13 +12,13 @@
       .\install.ps1 -Port 4100                      # use another port if 4000 is taken
 
   What it does
-    1. copies the app to C:\ExportDesk
-    2. installs Node.js LTS if missing, then the dependencies
+    1. copies this folder to C:\ExportDesk (index.js, routes\, .env, node_modules\ ...)
+    2. installs Node.js LTS if missing, then the dependencies (skipped when node_modules is included)
     3. opens the firewall port(s)
     4. registers a scheduled task "ExportDeskAPI" that starts at boot and restarts the backend if it stops
     5. with -Domain: downloads caddy.exe and registers "ExportDeskCaddy" for automatic HTTPS
   Safe to run again: it updates the files and restarts only its own processes.
-  The SQL Server connection is entered once in the browser (setup wizard) or in server\.env (DB_* variables).
+  Settings live in .env next to this script (REGISTRY_* for multi-client mode, PLATFORM_ADMIN_*, PORT).
 #>
 param(
   [string]$InstallPath = "C:\ExportDesk",
@@ -30,7 +30,7 @@ $ErrorActionPreference = "Stop"
 $ProgressPreference = "SilentlyContinue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $src = Split-Path -Parent $MyInvocation.MyCommand.Path
-$serverJs = Join-Path $InstallPath "server\index.js"
+$serverJs = Join-Path $InstallPath "index.js"
 $runner = Join-Path $InstallPath "run-server.cmd"
 $log = Join-Path $InstallPath "server.log"
 function Step($m) { Write-Host "`n==> $m" -ForegroundColor Cyan }
@@ -52,11 +52,11 @@ Stop-OurProcesses
 New-Item -ItemType Directory -Force -Path $InstallPath | Out-Null
 if ((Resolve-Path $src).Path.TrimEnd('\') -ne (Resolve-Path $InstallPath).Path.TrimEnd('\')) {
   # node_modules is copied too when present (pure-JavaScript dependencies: no internet needed on the PC)
-  & robocopy $src $InstallPath /E /XD .git .vercel /XF *.zip *.log /NFL /NDL /NJH /NJS /NP | Out-Null
+  & robocopy $src $InstallPath /E /XD .git .vercel config /XF *.zip *.log /NFL /NDL /NJH /NJS /NP | Out-Null
   if ($LASTEXITCODE -ge 8) { throw "File copy failed (robocopy exit code $LASTEXITCODE)" }
 }
-$envFile = Join-Path $InstallPath "server\.env"
-if (-not (Test-Path $envFile)) { Copy-Item (Join-Path $InstallPath "server\.env.example") $envFile }
+$envFile = Join-Path $InstallPath ".env"
+if (-not (Test-Path $envFile)) { Copy-Item (Join-Path $InstallPath ".env.example") $envFile; Write-Warning ".env was missing - created from .env.example. Fill in REGISTRY_* / PLATFORM_ADMIN_* in $envFile and run again."; exit 1 }
 
 function Set-EnvValue($key, $value) {
   $lines = @(Get-Content $envFile)
@@ -66,7 +66,7 @@ function Set-EnvValue($key, $value) {
 Set-EnvValue "PORT" $Port
 Set-EnvValue "HOST" $(if ($Domain) { "127.0.0.1" } else { "0.0.0.0" })
 Set-EnvValue "COOKIE_SECURE" $(if ($Domain) { "1" } else { "0" })
-Set-EnvValue "CORS_ORIGIN" ""   # Vercel rewrites proxy /api, so no CORS needed
+
 
 # ---------- port check ----------
 $busy = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
@@ -158,13 +158,13 @@ if ($ok) {
   Write-Host "Backend is running." -ForegroundColor Green
   if ($Domain) {
     Write-Host "  Public HTTPS : https://$Domain/api/health   (certificate is issued on the first request - allow ~30 s)"
-    Write-Host "  Next: in vercel.json set the rewrite destination to https://$Domain and push; Vercel redeploys." -ForegroundColor Yellow
+    Write-Host "  Next: in the repo's vercel.json set the rewrite destination to https://$Domain and push; Vercel redeploys." -ForegroundColor Yellow
   } else {
     Write-Host "  On this PC     : http://localhost:$Port"
     if ($ip) { Write-Host "  On the network : http://${ip}:$Port" }
-    Write-Host "  Next: forward router port $Port to this PC and put http://<public-ip>:$Port in vercel.json rewrites." -ForegroundColor Yellow
+    Write-Host "  Next: forward router port $Port to this server; vercel.json rewrites must point to http://<public-ip>:$Port" -ForegroundColor Yellow
   }
-  Write-Host "  Open the app once in the browser to finish the SQL Server setup wizard (if DB_* is not set in server\.env)."
+  Write-Host "  Test: http://localhost:$Port/api/health"
 } else {
   Write-Warning "The backend did not answer on port $Port within 60 s. Last lines of $log :"
   if (Test-Path $log) { Get-Content $log -Tail 25 }

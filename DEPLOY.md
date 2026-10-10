@@ -20,19 +20,20 @@
 
 ## Part A — Backend on your server (Windows or Linux)
 
-1. Copy the project, run `npm install --omit=dev`.
-2. Create `server/.env` from `server/.env.example` and fill in:
+Only the **`server/` folder** goes to the server (the frontend stays on Vercel; the full project is never copied to the server).
+
+1. Copy `server/` to the server as `C:\ExportDesk` (contents: `index.js`, `routes\`, `package.json`, `.env`, optionally `node_modules\`). Run `npm install --omit=dev` inside it if `node_modules` was not included.
+2. Create `.env` from `.env.example` and fill in:
    - `REGISTRY_SERVER` / `REGISTRY_USER` / `REGISTRY_PASSWORD` → your own SQL Server (the registry DB `ExportDeskLink` and table `exportdesklink` are created automatically).
    - `PLATFORM_ADMIN_EMAIL` / `PLATFORM_ADMIN_PASSWORD` → your sign-in for the Clients page.
    - `SECRET_KEY` → any long random string (keeps sessions valid across restarts and encrypts client DB passwords).
    - `COOKIE_SECURE=1` once you are behind HTTPS.
-3. Run permanently: `npm i -g pm2 && pm2 start server/index.js --name exportdesk && pm2 save`
-   (Windows alternative: `.\install.ps1` registers a scheduled task; `.\install.ps1 -Domain api.yourdomain.com` also sets up Caddy HTTPS.)
-4. Reverse proxy with HTTPS (Caddy / nginx / IIS) → `https://api.yourdomain.com`. Check `GET /api/health` → `{"ok":true,"mode":"multi"}`.
+3. Run permanently — Windows: PowerShell (Admin) in `C:\ExportDesk` → `.\install.ps1` (registers the auto-start task `ExportDeskAPI`, opens the firewall port; `-Domain api.yourdomain.com` also sets up Caddy HTTPS). Linux: `pm2 start index.js --name exportdesk`.
+4. Make port 4000 reachable from the internet (router port-forward), or use `-Domain` for HTTPS. Check `GET /api/health` → `{"ok":true,"mode":"multi"}`.
 
 ## Part B — Frontend on Vercel
 
-1. In `vercel.json` replace `YOUR-BACKEND-DOMAIN` with `api.yourdomain.com` (both rewrites).
+1. `vercel.json` rewrites `/api/*` to the backend (`http://<server-ip>:4000` or `https://api.yourdomain.com`). The PDF libraries are shipped in `public/vendor/`, so the frontend needs nothing else from the backend.
 2. Import the GitHub repo on Vercel: framework **Other**, no build command, output directory `public` (already set).
 3. Open the Vercel URL → *Platform owner sign-in* (link at the bottom of the login card) → **Clients** page.
 

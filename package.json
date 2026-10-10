@@ -1,23 +1,12 @@
 {
-  "name": "exportdesk-sales-generator",
+  "name": "exportdesk",
   "version": "1.0.0",
-  "description": "ExportDesk - dynamic sales document generator (Quotation / Proforma / Commercial Invoice) for import-export businesses. Runs on a local PC with MySQL.",
-  "main": "server/index.js",
+  "description": "ExportDesk - export invoice generator. Frontend in public/ (Vercel), backend in server/ (your server).",
   "private": true,
   "scripts": {
+    "postinstall": "cd server && npm install --omit=dev --no-audit --no-fund",
     "start": "node server/index.js",
     "dev": "node --watch server/index.js"
   },
-  "engines": {
-    "node": ">=18"
-  },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cookie-parser": "^1.4.6",
-    "express": "^4.19.2",
-    "html2canvas": "^1.4.1",
-    "jsonwebtoken": "^9.0.2",
-    "jspdf": "^2.5.1",
-    "mssql": "^11.0.1"
-  }
+  "engines": { "node": ">=18" }
 }
