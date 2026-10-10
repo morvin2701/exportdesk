@@ -240,9 +240,5 @@ export function renderInvoice(doc, settings, options = {}) {
     </div>
   </section>
 
-  <footer class="doc-foot">
-    <span>${esc(company.name || '')}${company.website ? ' · ' + esc(company.website) : ''}${company.email ? ' · ' + esc(company.email) : ''}</span>
-    <span>This is a computer-generated document.</span>
-  </footer>
 </div>`;
 }
