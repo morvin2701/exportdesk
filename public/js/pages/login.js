@@ -55,7 +55,7 @@ export async function render(root) {
       <p class="lead">Sign in to continue to your invoices.</p>
       ${footer}
       <form class="auth-form" novalidate>
-        ${multi && !lockedTenant ? `<div class="field"><label>Company code</label><div class="input-group">${icon('building')}<input class="input mono" name="code" placeholder="e.g. ACME" value="${esc(savedCode)}" autocomplete="organization" style="text-transform:uppercase" required></div></div>` : ''}
+        ${multi && !lockedTenant ? `<div class="field"><label>Company code</label><div class="input-group">${icon('building')}<input class="input mono" name="code" placeholder="ACME" value="${esc(savedCode)}" autocomplete="organization" style="text-transform:uppercase" required></div></div>` : ''}
         <div class="field"><label>Email</label><div class="input-group">${icon('user')}<input class="input" type="email" name="email" placeholder="you@company.com" autocomplete="username" required ${multi && !lockedTenant && !savedCode ? '' : 'autofocus'}></div></div>
         <div class="field"><label>Password</label><div class="pw-wrap"><input class="input" type="password" name="password" placeholder="••••••••" autocomplete="current-password" required><button type="button" class="icon-btn" data-act="pw">${icon('eye')}</button></div></div>
         <div class="err"></div>
