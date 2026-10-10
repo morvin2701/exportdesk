@@ -130,4 +130,5 @@
   .doc + .doc { page-break-before: always; }
   .doc .card, .doc .exporter-band, .doc .shipment, .doc .totals, .doc .sign, .doc .items-table tr, .doc .items-table thead { page-break-inside: avoid; break-inside: avoid; }
   .doc .items-table thead { display: table-header-group; }
+  .doc .items-table tfoot { display: table-row-group; } /* totals once at the end, not on every page */
 }
