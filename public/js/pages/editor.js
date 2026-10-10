@@ -76,6 +76,7 @@ export async function render(root, params) {
         <div class="ptb-right">
           <select class="select sm" data-tool="template" title="Template"><option value="modern">Modern</option><option value="classic">Classic</option><option value="minimal">Minimal</option></select>
           <select class="select sm" data-tool="zoom" title="Zoom"><option value="fit">Fit</option><option value="0.6">60%</option><option value="0.8">80%</option><option value="1">100%</option></select>
+          <span class="sep"></span>
           <button class="btn btn-secondary btn-sm" data-tool="print">${icon('print')}<span class="hide-sm">Print</span></button>
           <button class="btn btn-secondary btn-sm" data-tool="pdf">${icon('download')}<span class="hide-sm">PDF</span></button>
           <button class="btn btn-primary btn-sm" data-tool="save">${icon('save')}<span>Save</span></button>
@@ -90,6 +91,18 @@ export async function render(root, params) {
   const scroller = root.querySelector('.preview-scroll');
   const editorEl = root.querySelector('.editor');
   const openSections = new Set(['invoice', 'consignee', 'items', 'charges']);
+
+  // Toolbar lives in the top bar on desktop (next to the page title) and above the preview on small screens
+  const toolbarEl = root.querySelector('.preview-toolbar');
+  const previewEl = root.querySelector('.editor-preview');
+  const desktopMq = window.matchMedia('(min-width: 1025px)');
+  function placeToolbar() {
+    const slot = document.querySelector('.topbar .tb-actions');
+    if (desktopMq.matches && slot) { if (toolbarEl.parentElement !== slot) slot.appendChild(toolbarEl); }
+    else if (toolbarEl.parentElement !== previewEl) previewEl.prepend(toolbarEl);
+  }
+  placeToolbar();
+  desktopMq.addEventListener('change', placeToolbar);
 
   // ---- Form rendering ----
   function buildForm() {
@@ -266,7 +279,7 @@ export async function render(root, params) {
     if (path === 'status') { formEl.querySelector('.paid-field').classList.toggle('hidden', value !== 'partial'); }
     if (path === 'showWeights') buildItems();
     if (path === 'currency' || path.startsWith('charges.')) updateTotalsMini();
-    if (path === 'number') updateNumberLabel();
+    if (path === 'number' || path === 'consignee.name') updateNumberLabel();
     if (e.type === 'change' && path === 'date' && !doc.id && settings.defaults && settings.defaults.dueDays && !doc.dueDate) { doc.dueDate = addDaysISO(doc.date, settings.defaults.dueDays); const dd = formEl.querySelector('[data-bind="dueDate"]'); if (dd) dd.value = doc.dueDate; }
     markDirty(); schedulePreview();
   }
@@ -313,7 +326,9 @@ export async function render(root, params) {
     applyZoom();
   }
   function updateNumberLabel() {
-    root.querySelector('.ptb-num').textContent = doc.number || 'AUTO';
+    root.querySelector('.ptb-num') && (root.querySelector('.ptb-num').textContent = doc.number || 'AUTO');
+    const t = toolbarEl.querySelector('.ptb-num'); if (t) t.textContent = doc.number || 'AUTO';
+    setTopbar({ title: doc.id ? `Invoice ${doc.number}` : `New invoice · ${doc.number || 'AUTO'}`, sub: doc.consignee.name || 'Create and preview an export invoice' });
   }
   let zoom = 'fit';
   function applyZoom() {
@@ -332,15 +347,17 @@ export async function render(root, params) {
   // ---- Dirty state / guards ----
   function markDirty() {
     dirty = JSON.stringify(doc) !== savedSnapshot;
-    const el = root.querySelector('.dirty-state');
-    el.innerHTML = dirty ? '<span class="dirty-pill">UNSAVED</span>' : (doc.id ? '<span class="saved-pill">SAVED</span>' : '');
+    const pill = dirty ? '<span class="dirty-pill">UNSAVED</span>' : (doc.id ? '<span class="saved-pill">SAVED</span>' : '');
+    const el = toolbarEl.querySelector('.dirty-state'); if (el) el.innerHTML = pill;
+    const sub = document.querySelector('.topbar .tb-sub');
+    if (sub && desktopMq.matches) sub.innerHTML = `${esc(doc.consignee.name || 'Create and preview an export invoice')} ${pill ? '· ' + pill : ''}`;
   }
   const beforeUnload = e => { if (dirty) { e.preventDefault(); e.returnValue = ''; } };
   window.addEventListener('beforeunload', beforeUnload);
   setNavGuard(async () => !dirty || confirmDialog({ title: 'Discard unsaved changes?', message: 'This invoice has changes that are not saved yet.', confirmText: 'Discard', danger: true }));
 
   // ---- Toolbar ----
-  const tb = root.querySelector('.preview-toolbar');
+  const tb = toolbarEl;
   tb.querySelector('[data-tool="template"]').value = doc.template || 'modern';
   tb.querySelector('[data-tool="template"]').onchange = e => { doc.template = e.target.value; markDirty(); renderPreview(); };
   tb.querySelector('[data-tool="zoom"]').onchange = e => { zoom = e.target.value; applyZoom(); };
@@ -367,7 +384,6 @@ export async function render(root, params) {
       formEl.querySelector('[data-bind="number"]').value = doc.number;
       savedSnapshot = JSON.stringify(doc); markDirty(); updateNumberLabel(); renderPreview();
       history.replaceState(null, '', `#/editor/${doc.id}`);
-      setTopbar({ title: `Invoice ${doc.number}`, sub: doc.consignee.name });
       toast(`Invoice ${doc.number} saved`, 'success');
     } catch (e) { toast(e.message, 'error'); }
     finally { saving = false; setBusy(btn, false); }
@@ -381,9 +397,10 @@ export async function render(root, params) {
   renderPreview();
   updateNumberLabel();
   markDirty();
-  if (doc.id) setTopbar({ title: `Invoice ${doc.number}`, sub: doc.consignee.name });
 
   return () => {
+    desktopMq.removeEventListener('change', placeToolbar);
+    toolbarEl.remove();
     window.removeEventListener('resize', onResize);
     window.removeEventListener('beforeunload', beforeUnload);
     document.removeEventListener('keydown', onKey);

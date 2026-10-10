@@ -108,7 +108,8 @@ function buildShell() {
       <header class="topbar">
         <button class="icon-btn menu-btn" data-act="menu" aria-label="Menu">${icon('menu')}</button>
         <button class="icon-btn sb-toggle" data-act="collapse" title="Collapse sidebar">${icon('layout')}</button>
-        <div><div class="tb-title"></div><div class="tb-sub"></div></div>
+        <div class="tb-heading"><div class="tb-title"></div><div class="tb-sub"></div></div>
+        <div class="tb-actions"></div>
         <div class="tb-right">
           <div class="tb-status" title="${platform ? 'Registry database' : 'SQL Server connection'}"><span class="dot"></span><span class="txt">${esc(statusText)}</span></div>
           <button class="icon-btn" data-act="theme" title="Toggle theme">${icon(store.theme === 'dark' ? 'sun' : 'moon')}</button>
