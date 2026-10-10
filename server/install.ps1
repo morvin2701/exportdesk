@@ -43,10 +43,11 @@ function Step($m) { Write-Host "`n==> $m" -ForegroundColor Cyan }
 function Stop-OurProcesses {
   Stop-ScheduledTask -TaskName "ExportDeskAPI" -ErrorAction SilentlyContinue
   Stop-ScheduledTask -TaskName "ExportDeskCaddy" -ErrorAction SilentlyContinue
+  # any earlier ExportDesk backend (exe or Node, any layout) plus its restart loop
   Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
-    ($_.Name -eq "cmd.exe"   -and $_.CommandLine -like "*$runner*") -or
-    ($_.Name -eq "node.exe"  -and $_.CommandLine -like "*$serverJs*") -or
-    ($_.Name -eq "ExportDesk-server.exe" -and $_.ExecutablePath -eq $exe) -or
+    ($_.Name -eq "cmd.exe"   -and $_.CommandLine -like "*run-server.cmd*" -and $_.CommandLine -like "*ExportDesk*") -or
+    ($_.Name -eq "node.exe"  -and $_.CommandLine -like "*ExportDesk*index.js*") -or
+    ($_.Name -eq "ExportDesk-server.exe") -or
     ($_.Name -eq "caddy.exe" -and $_.ExecutablePath -eq (Join-Path $InstallPath "caddy.exe"))
   } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
   Start-Sleep -Seconds 2
