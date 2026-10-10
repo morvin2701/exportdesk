@@ -3,10 +3,24 @@
   "outputDirectory": "public",
   "cleanUrls": false,
   "rewrites": [
-    { "source": "/api/:path*", "destination": "https://YOUR-BACKEND-DOMAIN/api/:path*" },
-    { "source": "/vendor/:path*", "destination": "https://YOUR-BACKEND-DOMAIN/vendor/:path*" }
+    {
+      "source": "/api/:path*",
+      "destination": "http://103.49.124.50:4000/api/:path*"
+    },
+    {
+      "source": "/vendor/:path*",
+      "destination": "http://103.49.124.50:4000/vendor/:path*"
+    }
   ],
   "headers": [
-    { "source": "/(.*)", "headers": [ { "key": "X-Frame-Options", "value": "SAMEORIGIN" } ] }
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        }
+      ]
+    }
   ]
 }
