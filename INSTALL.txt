@@ -1,0 +1,22 @@
+ExportDesk - install on the client's Windows PC
+================================================
+
+1. Paste this whole folder as   C:\ExportDesk   (so that C:\ExportDesk\install.ps1 exists)
+
+2. Right-click Start -> "Windows PowerShell (Admin)" / "Terminal (Admin)" and run:
+
+       cd C:\ExportDesk
+       Get-ChildItem -Recurse | Unblock-File
+       Set-ExecutionPolicy -Scope Process Bypass -Force
+       .\install.ps1
+
+   (with a domain + HTTPS instead:   .\install.ps1 -Domain api.yourdomain.com )
+
+3. When it prints "Backend is running", open   http://localhost:4000   on that PC.
+   Setup wizard:  Server = WIN-xxxx\SQLEXPRESS  (exactly as in SSMS), SQL login + password,
+   Database = ExportDesk  ->  Test connection  ->  Create database & continue  ->  create the admin user.
+
+4. For the Vercel frontend: forward router port 4000 to this PC (or use -Domain), then put the
+   public address in vercel.json rewrites and push. Full guide: DEPLOY.md
+
+The backend restarts automatically at boot (Task Scheduler -> "ExportDeskAPI"). Log: C:\ExportDesk\server.log

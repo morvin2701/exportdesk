@@ -5,6 +5,8 @@
   Run from an elevated PowerShell (Run as Administrator) inside the copied folder:
 
       Set-ExecutionPolicy -Scope Process Bypass -Force
+      cd C:\ExportDesk
+      Set-ExecutionPolicy -Scope Process Bypass -Force
       .\install.ps1                                 # LAN / public-IP mode  ->  http://<pc-ip>:4000
       .\install.ps1 -Domain api.yourdomain.com      # public HTTPS via Caddy (DNS A record -> this PC, ports 80/443 open)
       .\install.ps1 -Port 4100                      # use another port if 4000 is taken
@@ -49,7 +51,8 @@ Step "Copying files to $InstallPath"
 Stop-OurProcesses
 New-Item -ItemType Directory -Force -Path $InstallPath | Out-Null
 if ((Resolve-Path $src).Path.TrimEnd('\') -ne (Resolve-Path $InstallPath).Path.TrimEnd('\')) {
-  & robocopy $src $InstallPath /E /XD node_modules .git .vercel /XF install.ps1 *.zip *.log /NFL /NDL /NJH /NJS /NP | Out-Null
+  # node_modules is copied too when present (pure-JavaScript dependencies: no internet needed on the PC)
+  & robocopy $src $InstallPath /E /XD .git .vercel /XF *.zip *.log /NFL /NDL /NJH /NJS /NP | Out-Null
   if ($LASTEXITCODE -ge 8) { throw "File copy failed (robocopy exit code $LASTEXITCODE)" }
 }
 $envFile = Join-Path $InstallPath "server\.env"
@@ -88,12 +91,16 @@ if (-not $node) {
 $nodeExe = $node.Source
 Write-Host "Node $(& $nodeExe -v)  ($nodeExe)"
 
-Step "Installing dependencies"
-Push-Location $InstallPath
-try {
-  & npm install --omit=dev --no-audit --no-fund --loglevel=error
-  if ($LASTEXITCODE -ne 0) { throw "npm install failed (exit code $LASTEXITCODE)" }
-} finally { Pop-Location }
+Step "Dependencies"
+if (Test-Path (Join-Path $InstallPath "node_modules\mssql")) {
+  Write-Host "node_modules already present - skipping npm install (no internet needed)"
+} else {
+  Push-Location $InstallPath
+  try {
+    & npm install --omit=dev --no-audit --no-fund --loglevel=error
+    if ($LASTEXITCODE -ne 0) { throw "npm install failed (exit code $LASTEXITCODE)" }
+  } finally { Pop-Location }
+}
 
 # ---------- 3. firewall ----------
 Step "Windows Firewall"
