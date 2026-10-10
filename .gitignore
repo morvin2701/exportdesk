@@ -3,3 +3,4 @@ server/config/db.json
 server/config/secret.json
 .DS_Store
 *.log
+server/.env
