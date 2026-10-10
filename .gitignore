@@ -4,3 +4,4 @@ server/config/secret.json
 .DS_Store
 *.log
 server/.env
+dist/

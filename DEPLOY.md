@@ -20,7 +20,12 @@
 
 ## Part A — Backend on your server (Windows or Linux)
 
-Only the **`server/` folder** goes to the server (the frontend stays on Vercel; the full project is never copied to the server).
+Only the backend goes to the server (the frontend stays on Vercel; the full project is never copied to the server). Two options:
+
+**Option 1 — single EXE (recommended, no Node.js on the server)**
+`npm run build:exe` on your Mac/PC produces `dist/ExportDesk-server-win-x64.exe` (~100 MB). Copy it to the server as `C:\ExportDesk\ExportDesk-server.exe` together with `.env`, `install.ps1` and `Caddyfile`, then run `.\install.ps1` (it detects the exe and registers the auto-start task). No `node_modules`, nothing to scan or index.
+
+**Option 2 — source folder**
 
 1. Copy `server/` to the server as `C:\ExportDesk` (contents: `index.js`, `routes\`, `package.json`, `.env`, optionally `node_modules\`). Run `npm install --omit=dev` inside it if `node_modules` was not included.
 2. Create `.env` from `.env.example` and fill in:

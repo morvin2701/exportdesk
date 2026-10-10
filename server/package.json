@@ -7,12 +7,25 @@
   "scripts": {
     "start": "node index.js"
   },
-  "engines": { "node": ">=18" },
+  "engines": {
+    "node": ">=18"
+  },
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.6",
     "express": "^4.19.2",
     "jsonwebtoken": "^9.0.2",
     "mssql": "^11.0.1"
+  },
+  "bin": "index.js",
+  "pkg": {
+    "scripts": [
+      "*.js",
+      "routes/*.js"
+    ],
+    "targets": [
+      "node20-win-x64"
+    ],
+    "outputPath": "../dist"
   }
 }

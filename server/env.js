@@ -1,7 +1,9 @@
 /** Minimal .env loader (server/.env) — no dependency needed. Existing environment variables win. */
 const fs = require('fs');
 const path = require('path');
-const file = path.join(__dirname, '.env');
+/** Directory for runtime files: next to the exe when packaged, else this folder. */
+const BASE_DIR = process.pkg ? path.dirname(process.execPath) : __dirname;
+const file = path.join(BASE_DIR, '.env');
 if (fs.existsSync(file)) {
   for (const raw of fs.readFileSync(file, 'utf8').split(/\r?\n/)) {
     const line = raw.trim();
@@ -14,3 +16,5 @@ if (fs.existsSync(file)) {
     if (process.env[key] === undefined) process.env[key] = val;
   }
 }
+
+module.exports = { BASE_DIR };

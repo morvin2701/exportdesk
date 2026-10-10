@@ -93,7 +93,7 @@ Just run the Node server: it serves the frontend and the API from the same port 
 ## 6. Project layout
 
 ```
-server/            Backend API (Node) – self-contained: own package.json, index.js entry point, install.ps1. Only this folder is deployed to the server.
+server/            Backend API (Node) – self-contained: own package.json, index.js entry point, install.ps1. Only this folder (or the exe built from it with `npm run build:exe`) is deployed to the server.
 server/db.js       SQL Server connection, registry (exportdesklink) + automatic schema creation
 server/.env        Backend settings (port, REGISTRY_*, PLATFORM_ADMIN_*, cookies, optional DB_*) – see .env.example
 server/config/     db.json / secret.json (single-client mode) – do not share

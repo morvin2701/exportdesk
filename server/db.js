@@ -13,7 +13,7 @@ const crypto = require('crypto');
 const os = require('os');
 const sql = require('mssql');
 
-const CONFIG_DIR = path.join(__dirname, 'config');
+const CONFIG_DIR = path.join(process.pkg ? path.dirname(process.execPath) : __dirname, 'config');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'db.json');
 const SECRET_FILE = path.join(CONFIG_DIR, 'secret.json');
 

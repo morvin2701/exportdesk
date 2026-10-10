@@ -51,7 +51,7 @@ app.get('/api/health', (req, res) => res.json({ ok: true, mode: db.isMulti() ? '
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 // ---- Static frontend (only present in the all-in-one layout; on a server-only deployment the frontend lives on Vercel) ----
-const PUBLIC_DIR = path.join(__dirname, '..', 'public');
+const PUBLIC_DIR = process.pkg ? path.join(path.dirname(process.execPath), 'public') : path.join(__dirname, '..', 'public');
 const HAS_FRONTEND = require('fs').existsSync(path.join(PUBLIC_DIR, 'index.html'));
 if (HAS_FRONTEND) {
   app.use(express.static(PUBLIC_DIR, { index: 'index.html', maxAge: 0 }));

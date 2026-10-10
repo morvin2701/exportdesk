@@ -6,7 +6,10 @@
   "scripts": {
     "postinstall": "cd server && npm install --omit=dev --no-audit --no-fund",
     "start": "node server/index.js",
-    "dev": "node --watch server/index.js"
+    "dev": "node --watch server/index.js",
+    "build:exe": "cd server && npx --yes @yao-pkg/pkg index.js -t node22.23.2-win-x64 -o ../dist/ExportDesk-server --no-bytecode --public --public-packages \"*\""
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  }
 }

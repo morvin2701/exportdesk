@@ -1,6 +1,9 @@
 #Requires -RunAsAdministrator
 <#
-  ExportDesk - Windows installer for the BACKEND ONLY (this `server` folder). The frontend lives on Vercel.
+  ExportDesk - Windows installer for the BACKEND ONLY. The frontend lives on Vercel.
+  Works in two layouts:
+    - EXE layout   : ExportDesk-server.exe + .env  (no Node.js, no node_modules needed)
+    - Source layout: index.js + routes\ + package.json + .env (+ node_modules\)
 
   Run from an elevated PowerShell (Run as Administrator) inside the copied folder:
 
@@ -31,6 +34,8 @@ $ProgressPreference = "SilentlyContinue"
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 $src = Split-Path -Parent $MyInvocation.MyCommand.Path
 $serverJs = Join-Path $InstallPath "index.js"
+$exe = Join-Path $InstallPath "ExportDesk-server.exe"
+$useExe = Test-Path (Join-Path $src "ExportDesk-server.exe")
 $runner = Join-Path $InstallPath "run-server.cmd"
 $log = Join-Path $InstallPath "server.log"
 function Step($m) { Write-Host "`n==> $m" -ForegroundColor Cyan }
@@ -41,6 +46,7 @@ function Stop-OurProcesses {
   Get-CimInstance Win32_Process -ErrorAction SilentlyContinue | Where-Object {
     ($_.Name -eq "cmd.exe"   -and $_.CommandLine -like "*$runner*") -or
     ($_.Name -eq "node.exe"  -and $_.CommandLine -like "*$serverJs*") -or
+    ($_.Name -eq "ExportDesk-server.exe" -and $_.ExecutablePath -eq $exe) -or
     ($_.Name -eq "caddy.exe" -and $_.ExecutablePath -eq (Join-Path $InstallPath "caddy.exe"))
   } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
   Start-Sleep -Seconds 2
@@ -75,7 +81,11 @@ if ($busy) {
   throw "Port $Port is already used by '$($owner.Name)' (PID $($busy.OwningProcess)). Run again with another port, e.g.  .\install.ps1 -Port 4100"
 }
 
-# ---------- 2. Node.js ----------
+# ---------- 2. Node.js (source layout only) ----------
+$nodeExe = $null
+if ($useExe) {
+  Step "Single-file backend: $exe (Node.js not required)"
+} else {
 Step "Node.js"
 $node = Get-Command node -ErrorAction SilentlyContinue
 if (-not $node) {
@@ -101,6 +111,7 @@ if (Test-Path (Join-Path $InstallPath "node_modules\mssql")) {
     if ($LASTEXITCODE -ne 0) { throw "npm install failed (exit code $LASTEXITCODE)" }
   } finally { Pop-Location }
 }
+}
 
 # ---------- 3. firewall ----------
 Step "Windows Firewall"
@@ -113,12 +124,13 @@ foreach ($p in $ports) {
 
 # ---------- 4. backend task ----------
 Step "Registering backend task 'ExportDeskAPI'"
+$startCmd = if ($useExe) { "`"$exe`"" } else { "`"$nodeExe`" `"$serverJs`"" }
 Set-Content -Path $runner -Encoding ASCII -Value @"
 @echo off
 cd /d "$InstallPath"
 :loop
 echo [%date% %time%] starting backend >> "$log"
-"$nodeExe" "$serverJs" >> "$log" 2>&1
+$startCmd >> "$log" 2>&1
 echo [%date% %time%] backend stopped (exit %errorlevel%), restarting in 5 s >> "$log"
 timeout /t 5 /nobreak > nul
 goto loop
