@@ -1,0 +1,9 @@
+# Caddy reverse proxy: gives the backend a public HTTPS address with an automatic Let's Encrypt certificate.
+# 1. Point a DNS A record (e.g. api.yourdomain.com) at this PC's public IP.
+# 2. Open ports 80 and 443 on the router / Windows Firewall (port 4000 stays closed to the internet).
+# 3. Replace the hostname below, then run:  caddy run --config Caddyfile   (install.ps1 -Domain does this for you)
+
+api.yourdomain.com {
+    encode gzip
+    reverse_proxy 127.0.0.1:4000
+}

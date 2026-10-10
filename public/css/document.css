@@ -1,0 +1,132 @@
+/* ============ Invoice document (A4) — shared by preview, print, PDF ============ */
+.doc {
+  --ink: #0f172a; --ink-2: #334155; --ink-3: #64748b; --line: #e2e8f0; --paper: #ffffff; --soft: #f8fafc;
+  position: relative; width: 210mm; min-height: 297mm; margin: 0 auto; padding: 12mm 13mm 14mm; box-sizing: border-box;
+  background: var(--paper); color: var(--ink); font-family: 'Inter', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  font-size: 9.6pt; line-height: 1.42; overflow: hidden; display: flex; flex-direction: column; gap: 4.2mm;
+  -webkit-font-smoothing: antialiased; color-scheme: light;
+}
+.doc * { box-sizing: border-box; }
+.doc .mono { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.doc .strong { font-weight: 700; }
+.doc .muted { color: var(--ink-3); }
+.doc .c { text-align: center; } .doc .r { text-align: right; }
+.doc .lbl { font-size: 7.2pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 1.6mm; }
+.doc .card { border: 1px solid var(--line); border-radius: 2.4mm; padding: 3.2mm 3.6mm; background: #fff; }
+
+.doc-topbar { position: absolute; left: 0; top: 0; right: 0; height: 2.2mm; background: linear-gradient(90deg, var(--accent) 0 60%, #0b1b3a 60% 100%); }
+
+/* Header */
+.doc-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8mm; padding-top: 1mm; }
+.brand { display: flex; align-items: center; gap: 3.5mm; min-width: 0; }
+.brand-logo { max-height: 19mm; max-width: 42mm; object-fit: contain; }
+.brand-name { font-size: 17pt; font-weight: 800; letter-spacing: -.01em; color: #0b1b3a; line-height: 1.1; }
+.brand-tag { font-size: 8pt; color: var(--ink-3); letter-spacing: .12em; text-transform: uppercase; margin-top: 1mm; font-weight: 600; }
+.brand-legal { font-size: 8pt; color: var(--ink-2); margin-top: .6mm; }
+.title-block { text-align: right; flex-shrink: 0; }
+.doc-title { font-size: 19pt; font-weight: 900; letter-spacing: .22em; color: #0b1b3a; line-height: 1; margin-bottom: 2.4mm; }
+.title-meta .tm { display: flex; justify-content: flex-end; gap: 4mm; font-size: 9pt; line-height: 1.6; }
+.title-meta .tm span { color: var(--ink-3); } .title-meta .tm strong { font-weight: 700; min-width: 30mm; text-align: right; }
+
+/* Exporter band */
+.exporter-band { display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 4mm; background: var(--soft); border: 1px solid var(--line); border-radius: 2.4mm; padding: 3.2mm 3.6mm; }
+.eb-name { font-weight: 700; font-size: 10pt; margin-bottom: .6mm; }
+.eb-lines { font-size: 8.6pt; color: var(--ink-2); }
+
+/* Parties */
+.parties { display: grid; grid-template-columns: 1.25fr 1fr; gap: 4mm; }
+.party-name { font-size: 12pt; font-weight: 800; margin-bottom: 1mm; color: #0b1b3a; }
+.party-line { font-size: 9pt; color: var(--ink-2); }
+.party-contacts { display: flex; flex-wrap: wrap; gap: 1mm 4mm; margin-top: 1.4mm; font-size: 8.6pt; color: var(--ink-2); }
+.notify { margin-top: 3mm; padding-top: 2.6mm; border-top: 1px dashed var(--line); }
+.kv { display: grid; grid-template-columns: 34mm 1fr; gap: 3mm; font-size: 8.8pt; padding: .9mm 0; border-bottom: 1px solid #f1f5f9; }
+.kv:last-child { border-bottom: 0; }
+.kv .k { color: var(--ink-3); } .kv .v { font-weight: 600; color: var(--ink); word-break: break-word; }
+.details .kv { grid-template-columns: 30mm 1fr; }
+
+/* Shipment */
+.shipment { border: 1px solid var(--line); border-radius: 2.4mm; padding: 3.2mm 3.6mm; }
+.ship-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2mm 5mm; }
+.sg { display: flex; flex-direction: column; gap: .3mm; font-size: 8.6pt; }
+.sg .k { color: var(--ink-3); font-size: 7.6pt; } .sg .v { font-weight: 600; }
+
+/* Items */
+.items-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+.items-table th { background: #0b1b3a; color: #fff; font-size: 7.4pt; letter-spacing: .1em; text-transform: uppercase; padding: 2.6mm 2.2mm; text-align: left; font-weight: 700; }
+.items-table th:first-child { border-radius: 2mm 0 0 0; } .items-table th:last-child { border-radius: 0 2mm 0 0; }
+.items-table td { padding: 2.4mm 2.2mm; border-bottom: 1px solid var(--line); vertical-align: top; }
+.items-table tbody tr:nth-child(even) td { background: #fbfcfe; }
+.items-table td.desc .d-main { font-weight: 600; }
+.items-table td.desc .d-sub { font-size: 8pt; color: var(--ink-3); margin-top: .6mm; }
+.items-table td.empty { padding: 8mm; font-style: italic; }
+.items-table tfoot td { background: var(--soft); font-size: 8.6pt; color: var(--ink-2); border-bottom: 2px solid var(--accent); padding: 2.2mm; }
+.items-table tbody tr { page-break-inside: avoid; break-inside: avoid; }
+
+/* Summary */
+.summary { display: grid; grid-template-columns: 1fr 68mm; gap: 4mm; align-items: start; }
+.summary-left { display: flex; flex-direction: column; gap: 3mm; }
+.words-text { font-weight: 700; font-size: 9.6pt; color: #0b1b3a; }
+.pkg-row { display: flex; flex-wrap: wrap; gap: 1.4mm 5mm; font-size: 8.8pt; font-weight: 600; color: var(--ink-2); }
+.notes-text { font-size: 8.8pt; color: var(--ink-2); }
+.totals { border: 1px solid var(--line); border-radius: 2.4mm; overflow: hidden; }
+.totals .tr { display: flex; justify-content: space-between; gap: 4mm; padding: 2mm 3.6mm; font-size: 9pt; border-bottom: 1px solid #f1f5f9; }
+.totals .tr span:first-child { color: var(--ink-2); }
+.totals .tr.grand { background: #0b1b3a; color: #fff; font-size: 11pt; font-weight: 800; padding: 3.2mm 3.6mm; border-bottom: 0; }
+.totals .tr.grand span:first-child { color: #cbd5e1; font-size: 8pt; letter-spacing: .14em; text-transform: uppercase; align-self: center; }
+.totals .tr.due { font-weight: 800; color: #b91c1c; }
+
+/* Bottom */
+.bottom { display: grid; grid-template-columns: 1fr 58mm; gap: 6mm; margin-top: auto; align-items: end; }
+.bottom-left { display: flex; flex-direction: column; gap: 3mm; }
+.bank-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 5mm; }
+.bank-grid .kv { grid-template-columns: 24mm 1fr; font-size: 8.4pt; }
+.declaration, .terms { font-size: 8.2pt; color: var(--ink-2); }
+.terms ol { margin: 0; padding-left: 4mm; } .terms li { margin-bottom: .4mm; }
+.sign { text-align: center; display: flex; flex-direction: column; align-items: center; }
+.sign-for { font-size: 8.8pt; color: var(--ink-2); margin-bottom: 1mm; }
+.sign-art { position: relative; height: 26mm; width: 100%; display: flex; align-items: center; justify-content: center; }
+.stamp-img { position: absolute; max-height: 26mm; max-width: 34mm; object-fit: contain; opacity: .92; transform: rotate(-6deg); mix-blend-mode: multiply; }
+.sign-img { position: relative; max-height: 16mm; max-width: 40mm; object-fit: contain; z-index: 1; mix-blend-mode: multiply; }
+.sign-line { width: 48mm; border-top: 1px solid var(--ink-2); margin-top: 1mm; }
+.sign-name { font-weight: 700; font-size: 9pt; margin-top: 1.4mm; }
+.sign-title { font-size: 8pt; color: var(--ink-3); }
+
+.doc-foot { display: flex; justify-content: space-between; font-size: 7.6pt; color: var(--ink-3); border-top: 1px solid var(--line); padding-top: 2.4mm; }
+
+/* Status stamp overlay */
+.doc-stamp { position: absolute; right: 18mm; top: 62mm; z-index: 5; font-size: 30pt; font-weight: 900; letter-spacing: .3em; padding: 2mm 6mm; border: 2.2mm double currentColor; border-radius: 3mm; transform: rotate(-14deg); opacity: .18; pointer-events: none; }
+.doc-stamp-paid { color: #15803d; } .doc-stamp-cancelled { color: #b91c1c; } .doc-stamp-draft { color: #475569; }
+
+/* ---- Classic template: ruled, traditional export invoice look ---- */
+.doc-classic { --soft: #fff; font-family: 'Georgia', 'Times New Roman', serif; font-size: 9.8pt; }
+.doc-classic .doc-topbar { background: var(--accent); height: 1.4mm; }
+.doc-classic .brand-name, .doc-classic .doc-title, .doc-classic .party-name { color: #111; font-family: 'Georgia', serif; }
+.doc-classic .doc-title { letter-spacing: .14em; font-weight: 700; border-bottom: 2px solid #111; padding-bottom: 1.4mm; display: inline-block; }
+.doc-classic .card, .doc-classic .exporter-band, .doc-classic .shipment, .doc-classic .totals { border-radius: 0; border-color: #94a3b8; }
+.doc-classic .lbl { color: #111; letter-spacing: .1em; border-bottom: 1px solid #cbd5e1; padding-bottom: .8mm; }
+.doc-classic .items-table th { background: #111; border-radius: 0; font-family: 'Inter', sans-serif; }
+.doc-classic .items-table td { border: 1px solid #cbd5e1; }
+.doc-classic .items-table tbody tr:nth-child(even) td { background: #fff; }
+.doc-classic .totals .tr.grand { background: #111; }
+.doc-classic .items-table tfoot td { border-bottom: 2px solid #111; }
+
+/* ---- Minimal template: airy, lots of white, accent only on type ---- */
+.doc-minimal .doc-topbar { display: none; }
+.doc-minimal .card, .doc-minimal .exporter-band, .doc-minimal .shipment { border: 0; padding-left: 0; padding-right: 0; background: transparent; border-top: 1px solid var(--line); border-radius: 0; }
+.doc-minimal .items-table th { background: transparent; color: var(--ink); border-bottom: 2px solid var(--ink); border-radius: 0; }
+.doc-minimal .items-table tbody tr:nth-child(even) td { background: transparent; }
+.doc-minimal .totals { border: 0; }
+.doc-minimal .totals .tr.grand { background: transparent; color: var(--ink); border-top: 2px solid var(--ink); border-bottom: 2px solid var(--ink); }
+.doc-minimal .totals .tr.grand span:first-child { color: var(--ink-3); }
+.doc-minimal .doc-title { color: var(--accent); }
+
+/* ---- Print ---- */
+@page { size: A4; margin: 0; }
+@media print {
+  html, body { background: #fff !important; margin: 0; padding: 0; }
+  body * { visibility: hidden; }
+  #print-root, #print-root * { visibility: visible; }
+  #print-root { position: absolute; left: 0; top: 0; width: 210mm; }
+  .doc { box-shadow: none !important; margin: 0; min-height: 296mm; page-break-after: always; }
+  .doc:last-child { page-break-after: auto; }
+}
