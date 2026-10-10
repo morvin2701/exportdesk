@@ -1,6 +1,10 @@
 # ExportDesk — Export Invoice Generator
 
-A dynamic sales-invoice generator for import / export businesses. Runs entirely on a local Windows (or Mac) PC and stores everything in **your own Microsoft SQL Server instance** (the one you manage in SSMS). No cloud, no subscription.
+A dynamic sales-invoice generator for import / export businesses. Every company's data lives in **its own Microsoft SQL Server** (the instance you manage in SSMS).
+
+Two ways to run it:
+- **Single-client**: the app runs on the company's own PC (`start.bat`, in-app setup wizard). Sections 1–4 below.
+- **Multi-client (SaaS style)**: frontend on Vercel, one backend on your server, a `exportdesklink` registry table listing each client and *their* SQL Server. You onboard clients from the **Clients** page. See **[DEPLOY.md](DEPLOY.md)**.
 
 - **Invoice editor** – fill in consignee, shipment, goods and charges; the A4 invoice builds itself live with your logo, stamp and signature. Print or download as PDF.
 - **Saved invoices** – search, filter, status (unpaid / partial / paid), duplicate, delete, quick preview.

@@ -14,7 +14,7 @@ router.get('/', async (req, res) => {
   try {
     const out = {};
     for (const k of KEYS) {
-      const v = await db.getSetting(k);
+      const v = await req.db.getSetting(k);
       out[k] = Array.isArray(DEFAULTS[k]) ? (Array.isArray(v) ? v : DEFAULTS[k]) : { ...DEFAULTS[k], ...(v || {}) };
     }
     res.json(out);
@@ -38,9 +38,9 @@ router.put('/', requireAdmin, async (req, res) => {
         }
       }
       if (k === 'banks' && !Array.isArray(value)) value = [];
-      await db.setSetting(k, value);
+      await req.db.setSetting(k, value);
     }
-    await db.log(req.user.id, 'update', 'settings', null, Object.keys(body).join(','));
+    await req.db.log(req.user.id, 'update', 'settings', null, Object.keys(body).join(','));
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

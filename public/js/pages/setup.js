@@ -10,14 +10,14 @@ function steps(active) {
   return `<div class="steps">${list.map((s, i) => `<div class="step ${i === idx ? 'active' : ''} ${i < idx ? 'done' : ''}"><span class="n">${i < idx ? icon('check', 'sm') : i + 1}</span><span class="t">${esc(s[1])}</span></div>${i < list.length - 1 ? '<div class="step-line"></div>' : ''}`).join('')}</div>`;
 }
 
-export function dbForm(existing = {}, { compact = false } = {}) {
+export function dbForm(existing = {}, { compact = false, remote = false } = {}) {
   const ex = existing || {};
   return `<form class="db-form" novalidate>
     <div class="form-grid">
       <div class="field span-2">
         <label>Server / instance name</label>
-        <div class="input-group">${icon('db')}<input class="input mono" name="server" placeholder="DESKTOP-PC\\SQLEXPRESS" value="${esc(ex.server || '')}" autocomplete="off" spellcheck="false"></div>
-        <div class="hint">Exactly as you type it in SSMS "Connect to Server". Examples: <code>.\\SQLEXPRESS</code>, <code>MYPC\\SQLEXPRESS</code>, <code>localhost</code>, <code>192.168.1.10,1433</code></div>
+        <div class="input-group">${icon('db')}<input class="input mono" name="server" placeholder="${remote ? '103.1.2.3,1433' : 'DESKTOP-PC\\SQLEXPRESS'}" value="${esc(ex.server || '')}" autocomplete="off" spellcheck="false"></div>
+        <div class="hint">${remote ? 'Public IP or DDNS hostname of the PC running SQL Server, with the port: <code>103.1.2.3,1433</code> or <code>office.ddns.net,1433</code>. The router must forward that port to the PC.' : 'Exactly as you type it in SSMS "Connect to Server". Examples: <code>.\\SQLEXPRESS</code>, <code>MYPC\\SQLEXPRESS</code>, <code>localhost</code>, <code>192.168.1.10,1433</code>'}</div>
       </div>
       <div class="field span-2">
         <label>Authentication</label>
@@ -50,7 +50,7 @@ export function dbForm(existing = {}, { compact = false } = {}) {
   </form>`;
 }
 
-export function wireDbForm(form, { onInstalled }) {
+export function wireDbForm(form, { onInstalled, testUrl = '/api/setup/test', installUrl = '/api/setup/install', extra = () => ({}) }) {
   const result = form.querySelector('.result');
   form.querySelector('[data-act="pw"]').onclick = e => { const i = form.password; i.type = i.type === 'password' ? 'text' : 'password'; e.currentTarget.innerHTML = icon(i.type === 'password' ? 'eye' : 'eyeOff'); };
   form.querySelectorAll('.auth-seg button').forEach(b => b.onclick = () => {
@@ -66,7 +66,7 @@ export function wireDbForm(form, { onInstalled }) {
   form.querySelector('[data-act="test"]').onclick = async e => {
     const btn = e.currentTarget; setBusy(btn, true, 'Testing…'); result.innerHTML = '';
     try {
-      const r = await api.post('/api/setup/test', payload());
+      const r = await api.post(testUrl, { ...payload(), ...extra() });
       result.innerHTML = `<div class="conn-result"><div class="cr-title">${icon('check')} Connected to ${esc(r.serverName || '')} · SQL Server ${esc(r.version)} (${esc(r.edition)})</div>
         ${r.databases.length ? `<div>Existing databases (click to use):</div><div class="cr-dbs">${r.databases.map(d => `<span data-db="${esc(d)}">${esc(d)}</span>`).join('')}</div>` : '<div>No user databases yet — a new one will be created.</div>'}</div>`;
       result.querySelectorAll('[data-db]').forEach(s => s.onclick = () => { form.database.value = s.dataset.db; });
@@ -78,7 +78,7 @@ export function wireDbForm(form, { onInstalled }) {
     e.preventDefault();
     const btn = form.querySelector('[type="submit"]'); setBusy(btn, true, 'Setting up database…'); result.innerHTML = '';
     try {
-      const r = await api.post('/api/setup/install', payload());
+      const r = await api.post(installUrl, { ...payload(), ...extra() });
       toast(`Database "${r.database}" is ready`, 'success');
       await onInstalled(r);
     } catch (ex) {

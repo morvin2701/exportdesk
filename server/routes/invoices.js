@@ -11,7 +11,7 @@ const STATUSES = ['draft', 'unpaid', 'partial', 'paid', 'cancelled'];
 function pad(n, width) { return String(n).padStart(width, '0'); }
 
 /** Build the next invoice number from numbering settings, e.g. EXP-INV-2026-0001 */
-async function nextNumber(peekOnly, dateStr) {
+async function nextNumber(db, peekOnly, dateStr) {
   const numbering = { ...DEFAULTS.numbering, ...((await db.getSetting('numbering')) || {}) };
   const prefix = String(numbering.prefix || 'INV').trim();
   const width = Number(numbering.padding) || 4;
@@ -45,7 +45,7 @@ async function nextNumber(peekOnly, dateStr) {
 }
 
 /** After saving a numbered invoice, move the sequence forward so the next auto number is instant. */
-async function bumpSequence(number, dateStr) {
+async function bumpSequence(db, number, dateStr) {
   try {
     const numbering = { ...DEFAULTS.numbering, ...((await db.getSetting('numbering')) || {}) };
     const prefix = String(numbering.prefix || 'INV').trim();
@@ -68,13 +68,13 @@ async function bumpSequence(number, dateStr) {
 
 router.get('/next-number', async (req, res) => {
   try {
-    res.json({ number: await nextNumber(true, req.query.date) });
+    res.json({ number: await nextNumber(req.db, true, req.query.date) });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 router.get('/stats', async (req, res) => {
   try {
-    const rows = await db.query(`
+    const rows = await req.db.query(`
       SELECT
         COUNT(*) AS total_count,
         SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) AS paid_count,
@@ -82,13 +82,13 @@ router.get('/stats', async (req, res) => {
         SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END) AS draft_count,
         SUM(CASE WHEN MONTH(issue_date) = MONTH(GETDATE()) AND YEAR(issue_date) = YEAR(GETDATE()) AND status <> 'cancelled' THEN 1 ELSE 0 END) AS month_count
       FROM dbo.invoices`);
-    const byCurrency = await db.query(`
+    const byCurrency = await req.db.query(`
       SELECT currency,
         SUM(CASE WHEN status <> 'cancelled' THEN total ELSE 0 END) AS billed,
         SUM(CASE WHEN status IN ('unpaid','partial') THEN total - amount_paid ELSE 0 END) AS outstanding,
         SUM(CASE WHEN status = 'paid' THEN total WHEN status = 'partial' THEN amount_paid ELSE 0 END) AS collected
       FROM dbo.invoices GROUP BY currency ORDER BY billed DESC`);
-    const recent = await db.query(`
+    const recent = await req.db.query(`
       SELECT TOP 6 i.id, i.number, i.status, i.issue_date, i.currency, i.total, i.customer_name, i.customer_country, u.name AS created_by_name
       FROM dbo.invoices i LEFT JOIN dbo.users u ON u.id = i.created_by ORDER BY i.updated_at DESC`);
     res.json({ summary: rows[0], byCurrency, recent });
@@ -110,8 +110,8 @@ router.get('/', async (req, res) => {
     const lim = Math.min(Math.max(Number(limit) || 20, 1), 200);
     const offset = (Math.max(Number(page) || 1, 1) - 1) * lim;
 
-    const countRows = await db.query(`SELECT COUNT(*) AS c FROM dbo.invoices i ${whereSql}`, params);
-    const rows = await db.query(
+    const countRows = await req.db.query(`SELECT COUNT(*) AS c FROM dbo.invoices i ${whereSql}`, params);
+    const rows = await req.db.query(
       `SELECT i.id, i.number, i.status, i.issue_date, i.due_date, i.currency, i.customer_name, i.customer_country,
               i.subtotal, i.total, i.amount_paid, i.created_at, i.updated_at, u.name AS created_by_name
        FROM dbo.invoices i LEFT JOIN dbo.users u ON u.id = i.created_by
@@ -124,7 +124,7 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const rows = await db.query(
+    const rows = await req.db.query(
       `SELECT i.*, u.name AS created_by_name FROM dbo.invoices i LEFT JOIN dbo.users u ON u.id = i.created_by WHERE i.id = ?`,
       [Number(req.params.id)]
     );
@@ -154,7 +154,7 @@ function normalizeInvoice(body) {
   return { number, status, issueDate, dueDate, currency, customerName, customerCountry, subtotal, total, amountPaid, data: { ...data, number, status, amountPaid } };
 }
 
-async function upsertCustomer(c) {
+async function upsertCustomer(db, c) {
   if (!c || !c.name) return;
   const name = String(c.name).trim().slice(0, 190);
   if (!name) return;
@@ -171,18 +171,18 @@ async function upsertCustomer(c) {
 router.post('/', async (req, res) => {
   try {
     const inv = normalizeInvoice(req.body);
-    if (!inv.number) inv.number = await nextNumber(false, inv.issueDate);
+    if (!inv.number) inv.number = await nextNumber(req.db, false, inv.issueDate);
     inv.data.number = inv.number;
-    const dup = await db.query('SELECT TOP 1 id FROM dbo.invoices WHERE number = ?', [inv.number]);
+    const dup = await req.db.query('SELECT TOP 1 id FROM dbo.invoices WHERE number = ?', [inv.number]);
     if (dup.length) return res.status(409).json({ error: `Invoice number ${inv.number} already exists` });
-    const id = await db.insert(
+    const id = await req.db.insert(
       `INSERT INTO dbo.invoices (number, status, issue_date, due_date, currency, customer_name, customer_country, subtotal, total, amount_paid, data, created_by, updated_by)
        OUTPUT INSERTED.id VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [inv.number, inv.status, inv.issueDate, inv.dueDate, inv.currency, inv.customerName, inv.customerCountry, inv.subtotal, inv.total, inv.amountPaid, JSON.stringify(inv.data), req.user.id, req.user.id]
     );
-    await upsertCustomer(inv.data.consignee);
-    await bumpSequence(inv.number, inv.issueDate);
-    await db.log(req.user.id, 'create', 'invoice', id, inv.number);
+    await upsertCustomer(req.db, inv.data.consignee);
+    await bumpSequence(req.db, inv.number, inv.issueDate);
+    await req.db.log(req.user.id, 'create', 'invoice', id, inv.number);
     res.json({ ok: true, id, number: inv.number });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -190,21 +190,21 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const existing = await db.query('SELECT id, number FROM dbo.invoices WHERE id = ?', [id]);
+    const existing = await req.db.query('SELECT id, number FROM dbo.invoices WHERE id = ?', [id]);
     if (!existing.length) return res.status(404).json({ error: 'Invoice not found' });
     const inv = normalizeInvoice(req.body);
     if (!inv.number) inv.number = existing[0].number;
     inv.data.number = inv.number;
-    const dup = await db.query('SELECT TOP 1 id FROM dbo.invoices WHERE number = ? AND id <> ?', [inv.number, id]);
+    const dup = await req.db.query('SELECT TOP 1 id FROM dbo.invoices WHERE number = ? AND id <> ?', [inv.number, id]);
     if (dup.length) return res.status(409).json({ error: `Invoice number ${inv.number} is used by another invoice` });
-    await db.query(
+    await req.db.query(
       `UPDATE dbo.invoices SET number = ?, status = ?, issue_date = ?, due_date = ?, currency = ?, customer_name = ?, customer_country = ?,
         subtotal = ?, total = ?, amount_paid = ?, data = ?, updated_by = ?, updated_at = SYSDATETIME() WHERE id = ?`,
       [inv.number, inv.status, inv.issueDate, inv.dueDate, inv.currency, inv.customerName, inv.customerCountry, inv.subtotal, inv.total, inv.amountPaid, JSON.stringify(inv.data), req.user.id, id]
     );
-    await upsertCustomer(inv.data.consignee);
-    await bumpSequence(inv.number, inv.issueDate);
-    await db.log(req.user.id, 'update', 'invoice', id, inv.number);
+    await upsertCustomer(req.db, inv.data.consignee);
+    await bumpSequence(req.db, inv.number, inv.issueDate);
+    await req.db.log(req.user.id, 'update', 'invoice', id, inv.number);
     res.json({ ok: true, id, number: inv.number });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -214,7 +214,7 @@ router.patch('/:id/status', async (req, res) => {
     const id = Number(req.params.id);
     const { status, amount_paid } = req.body || {};
     if (!STATUSES.includes(status)) return res.status(400).json({ error: 'Invalid status' });
-    const rows = await db.query('SELECT total, data FROM dbo.invoices WHERE id = ?', [id]);
+    const rows = await req.db.query('SELECT total, data FROM dbo.invoices WHERE id = ?', [id]);
     if (!rows.length) return res.status(404).json({ error: 'Invoice not found' });
     let paid = Number(amount_paid) || 0;
     if (status === 'paid') paid = Number(rows[0].total);
@@ -222,9 +222,9 @@ router.patch('/:id/status', async (req, res) => {
     let data = {};
     try { data = JSON.parse(rows[0].data); } catch (e) { /* ignore */ }
     data.status = status; data.amountPaid = paid;
-    await db.query('UPDATE dbo.invoices SET status = ?, amount_paid = ?, data = ?, updated_by = ?, updated_at = SYSDATETIME() WHERE id = ?',
+    await req.db.query('UPDATE dbo.invoices SET status = ?, amount_paid = ?, data = ?, updated_by = ?, updated_at = SYSDATETIME() WHERE id = ?',
       [status, paid, JSON.stringify(data), req.user.id, id]);
-    await db.log(req.user.id, 'status', 'invoice', id, status);
+    await req.db.log(req.user.id, 'status', 'invoice', id, status);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -232,13 +232,13 @@ router.patch('/:id/status', async (req, res) => {
 router.delete('/:id', async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const rows = await db.query('SELECT number, created_by FROM dbo.invoices WHERE id = ?', [id]);
+    const rows = await req.db.query('SELECT number, created_by FROM dbo.invoices WHERE id = ?', [id]);
     if (!rows.length) return res.status(404).json({ error: 'Invoice not found' });
     if (req.user.role !== 'admin' && rows[0].created_by !== req.user.id) {
       return res.status(403).json({ error: 'Only an admin can delete invoices created by others' });
     }
-    await db.query('DELETE FROM dbo.invoices WHERE id = ?', [id]);
-    await db.log(req.user.id, 'delete', 'invoice', id, rows[0].number);
+    await req.db.query('DELETE FROM dbo.invoices WHERE id = ?', [id]);
+    await req.db.log(req.user.id, 'delete', 'invoice', id, rows[0].number);
     res.json({ ok: true });
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

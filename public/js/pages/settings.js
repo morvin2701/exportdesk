@@ -1,7 +1,7 @@
 /** Settings: company, branding, numbering, defaults, banks, terms, database, profile. */
 import { api } from '../api.js';
 import { h, icon, esc, toast, openModal, confirmDialog, setBusy, readFileAsDataURL } from '../ui.js';
-import { store, loadSettings, refreshStatus } from '../app.js';
+import { store, loadSettings, refreshStatus, isMulti } from '../app.js';
 import { renderInvoice } from '../document.js';
 import { dbForm, wireDbForm } from './setup.js';
 import { CURRENCIES, COUNTRIES, INCOTERMS, INCOTERM_LABELS, TRANSPORT_MODES, UNITS, uid } from '../utils.js';
@@ -172,7 +172,20 @@ export async function render(root, params) {
       wireSave(panel);
     }
 
-    if (tab === 'database') {
+    if (tab === 'database' && isMulti()) {
+      const t = store.tenant || {};
+      panel.innerHTML = `<div class="card-head"><h3>${icon('db')} Your SQL Server</h3><span class="tb-status"><span class="dot"></span>Connected</span></div>
+        <div class="card-body">
+          <div class="form-grid" style="margin-bottom:18px">
+            <div class="chip">${icon('building', 'sm')} Company: <span class="mono">${esc(t.name || '')} (${esc(t.code || '')})</span></div>
+            <div class="chip">${icon('db', 'sm')} Server: <span class="mono">${esc(t.db_server || '—')}</span></div>
+            <div class="chip">${icon('saved', 'sm')} Database: <span class="mono">${esc(t.db_database || '—')}</span></div>
+          </div>
+          <div class="note">${icon('info')}<span>All your invoices, settings and users are stored in this database on <strong>your own</strong> SQL Server. To change the connection (new PC, new IP, new password) contact your provider — they update it from their Clients page.</span></div>
+        </div>`;
+    }
+
+    if (tab === 'database' && !isMulti()) {
       const cfg = (store.status && store.status.db) || {};
       panel.innerHTML = `<div class="card-head"><h3>${icon('db')} SQL Server connection</h3><span class="tb-status"><span class="dot ${store.status.connected ? '' : 'off'}"></span>${store.status.connected ? 'Connected' : 'Not connected'}</span></div>
         <div class="card-body">

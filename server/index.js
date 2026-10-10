@@ -41,11 +41,13 @@ app.use(attachUser);
 // ---- API ----
 app.use('/api/setup', require('./routes/setup'));
 app.use('/api/auth', require('./routes/auth'));
+app.use('/api/platform', require('./routes/platform'));
+app.use('/api/tenant', require('./routes/tenant'));
 app.use('/api/invoices', require('./routes/invoices'));
 app.use('/api/settings', require('./routes/settings'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/customers', require('./routes/customers'));
-app.get('/api/health', (req, res) => res.json({ ok: true, configured: db.isConfigured(), time: new Date().toISOString() }));
+app.get('/api/health', (req, res) => res.json({ ok: true, mode: db.isMulti() ? 'multi' : 'single', configured: db.isMulti() || db.isConfigured(), time: new Date().toISOString() }));
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 // ---- Vendor libraries (served from node_modules so the app works fully offline) ----
@@ -74,11 +76,19 @@ function lanAddresses() {
 }
 
 (async () => {
-  if (db.isConfigured()) {
+  if (db.isMulti()) {
+    try {
+      await db.ensureRegistry();
+      const n = await db.registry().query('SELECT COUNT(*) AS c FROM dbo.exportdesklink');
+      console.log(`[db] MULTI-TENANT mode · registry "${db.registryConfig().server}" · database "${db.registryConfig().database}" · ${n[0].c} client(s)`);
+      if (!require('./auth').platformEnabled()) console.warn('[auth] PLATFORM_ADMIN_EMAIL / PLATFORM_ADMIN_PASSWORD not set — the Clients page cannot be opened.');
+    } catch (e) {
+      console.error('[db] Registry database not reachable:', db.friendlyError(e));
+    }
+  } else if (db.isConfigured()) {
     try {
       const cfg = db.readConfig();
-      if (cfg.fromEnv) await db.install(cfg); // DB_* from .env: create the database + tables if they don't exist yet
-      else await db.ensureSchema();
+      if (cfg.fromEnv) await db.install(cfg); else await db.local().ensureSchema();
       console.log(`[db] Connected to SQL Server "${db.publicConfig().server}" · database "${db.publicConfig().database}"`);
     } catch (e) {
       console.warn('[db] Could not connect to the configured SQL Server instance:', db.friendlyError(e));
